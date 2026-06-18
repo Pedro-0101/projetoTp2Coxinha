@@ -6,8 +6,7 @@ import java.util.List;
 public record TrocaResponse(
         Long estornoId,
         Long novaMovimentacaoId,
-        String saborAnterior,
-        String novoSabor,
+        List<ItemResponse> itens,
         BigDecimal preco,
         List<TrocoItem> troco,
         BigDecimal trocoEmCredito,

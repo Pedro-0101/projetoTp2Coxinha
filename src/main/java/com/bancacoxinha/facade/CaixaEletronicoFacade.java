@@ -9,6 +9,8 @@ import com.bancacoxinha.dto.CompraRequest;
 import com.bancacoxinha.dto.CompraResponse;
 import com.bancacoxinha.dto.CreditoRequest;
 import com.bancacoxinha.dto.CreditoResponse;
+import com.bancacoxinha.dto.ItemCompraRequest;
+import com.bancacoxinha.dto.ItemResponse;
 import com.bancacoxinha.dto.LoginRequest;
 import com.bancacoxinha.dto.MovimentacaoResponse;
 import com.bancacoxinha.dto.SaborResponse;
@@ -19,7 +21,9 @@ import com.bancacoxinha.dto.TrocoItem;
 import com.bancacoxinha.exception.RecursoNaoEncontradoException;
 import com.bancacoxinha.factory.Coxinha;
 import com.bancacoxinha.factory.CoxinhaFactory;
+import com.bancacoxinha.factory.ItemCoxinha;
 import com.bancacoxinha.model.Cliente;
+import com.bancacoxinha.model.ItemCompra;
 import com.bancacoxinha.model.Movimentacao;
 import com.bancacoxinha.model.SlotNota;
 import com.bancacoxinha.repository.MovimentacaoRepository;
@@ -76,18 +80,20 @@ public class CaixaEletronicoFacade {
     @Transactional
     public CompraResponse comprar(CompraRequest request) {
         Cliente cliente = buscarCliente(request.clienteId());
-        Coxinha coxinha = coxinhaFactory.criar(request.sabor());
         CalculoPrecoStrategy estrategia = resolverEstrategia(request.promocional());
 
-        CompraCommand comando = new CompraCommand(caixaOperacoes, cliente, coxinha, estrategia,
-                request.notasPagas(), request.trocoExato(), request.quantidade());
+        List<ItemCoxinha> itens = request.itens().stream()
+                .map(item -> new ItemCoxinha(coxinhaFactory.criar(item.sabor()), item.quantidade()))
+                .toList();
+
+        CompraCommand comando = new CompraCommand(caixaOperacoes, cliente, itens, estrategia,
+                request.notasPagas(), request.trocoExato());
         registroTransacoes.executar(comando);
 
         Movimentacao movimentacao = comando.getCompra();
         return new CompraResponse(
                 movimentacao.getId(),
-                movimentacao.getSabor(),
-                movimentacao.getQuantidade(),
+                paraItensResponse(movimentacao),
                 movimentacao.getValor(),
                 paraPagamentoItens(movimentacao),
                 paraTrocoItens(movimentacao),
@@ -100,18 +106,25 @@ public class CaixaEletronicoFacade {
         Cliente cliente = buscarCliente(request.clienteId());
         Movimentacao original = movimentacaoRepository.findById(request.movimentacaoId())
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Movimentacao nao encontrada: " + request.movimentacaoId()));
-        Coxinha novoSabor = coxinhaFactory.criar(request.novoSabor());
         CalculoPrecoStrategy estrategia = resolverEstrategia(request.promocional());
 
-        TrocaCommand comando = new TrocaCommand(caixaOperacoes, cliente, original, novoSabor, estrategia);
+        List<ItemCoxinha> novosItens = original.getItens().stream()
+                .map(item -> {
+                    String sabor = item.getSabor().equalsIgnoreCase(request.saborAntigo())
+                            ? request.novoSabor()
+                            : item.getSabor();
+                    return new ItemCoxinha(coxinhaFactory.criar(sabor), item.getQuantidade());
+                })
+                .toList();
+
+        TrocaCommand comando = new TrocaCommand(caixaOperacoes, cliente, original, novosItens, estrategia);
         registroTransacoes.executar(comando);
 
         Movimentacao novaCompra = comando.getNovaCompra();
         return new TrocaResponse(
                 comando.getEstorno().getId(),
                 novaCompra.getId(),
-                original.getSabor(),
-                novaCompra.getSabor(),
+                paraItensResponse(novaCompra),
                 novaCompra.getValor(),
                 paraTrocoItens(novaCompra),
                 trocoEmCredito(novaCompra),
@@ -179,6 +192,12 @@ public class CaixaEletronicoFacade {
                 .toList();
     }
 
+    private List<ItemResponse> paraItensResponse(Movimentacao movimentacao) {
+        return movimentacao.getItens().stream()
+                .map(item -> new ItemResponse(item.getSabor(), item.getQuantidade(), item.getPrecoUnitario()))
+                .toList();
+    }
+
     private MovimentacaoResponse paraMovimentacaoResponse(Movimentacao movimentacao) {
         return new MovimentacaoResponse(
                 movimentacao.getId(),
@@ -190,7 +209,8 @@ public class CaixaEletronicoFacade {
                 movimentacao.getValor(),
                 paraPagamentoItens(movimentacao),
                 paraTrocoItens(movimentacao),
-                movimentacao.getMovimentacaoOrigemId());
+                movimentacao.getMovimentacaoOrigemId(),
+                paraItensResponse(movimentacao));
     }
 
     private List<TrocoItem> paraPagamentoItens(Movimentacao movimentacao) {

@@ -1,9 +1,10 @@
 package com.bancacoxinha.service;
 
 import com.bancacoxinha.exception.RegraNegocioException;
-import com.bancacoxinha.factory.Coxinha;
+import com.bancacoxinha.factory.ItemCoxinha;
 import com.bancacoxinha.model.CedulaPaga;
 import com.bancacoxinha.model.Cliente;
+import com.bancacoxinha.model.ItemCompra;
 import com.bancacoxinha.model.Movimentacao;
 import com.bancacoxinha.model.SlotNota;
 import com.bancacoxinha.model.TipoMovimentacao;
@@ -16,6 +17,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -52,27 +54,36 @@ public class CaixaOperacoes {
         return movimentacaoRepository.save(movimentacao);
     }
 
-    public Movimentacao registrarCompra(Cliente cliente, Coxinha coxinha, CalculoPrecoStrategy estrategia,
-                                        List<Integer> notasPagas, boolean exigirTrocoExato, int quantidade) {
+    public Movimentacao registrarCompra(Cliente cliente, List<ItemCoxinha> itens, CalculoPrecoStrategy estrategia,
+                                        List<Integer> notasPagas, boolean exigirTrocoExato) {
         if (notasPagas == null || notasPagas.isEmpty()) {
             throw new RegraNegocioException("Informe ao menos uma cedula para pagamento");
         }
+        if (itens == null || itens.isEmpty()) {
+            throw new RegraNegocioException("Informe ao menos um item para compra");
+        }
+
         Map<Integer, Integer> cedulasPagas = new LinkedHashMap<>();
         for (Integer cedula : notasPagas) {
             buscarSlot(cedula);
             cedulasPagas.merge(cedula, 1, Integer::sum);
         }
 
-        BigDecimal precoUnitario = reais(estrategia.calcular(coxinha.getPrecoBase()));
-        BigDecimal precoTotal = precoUnitario.multiply(reais(quantidade));
+        List<ItemCompra> itensCompra = new ArrayList<>();
+        BigDecimal precoTotal = BigDecimal.ZERO;
+        for (ItemCoxinha item : itens) {
+            BigDecimal precoUnitario = reais(estrategia.calcular(item.coxinha().getPrecoBase()));
+            BigDecimal subtotal = precoUnitario.multiply(reais(item.quantidade()));
+            precoTotal = precoTotal.add(subtotal);
+            itensCompra.add(new ItemCompra(null, item.coxinha().getSabor(), item.quantidade(), precoUnitario));
+        }
+
         int totalPago = notasPagas.stream().mapToInt(Integer::intValue).sum();
         BigDecimal valorPago = reais(totalPago);
 
         if (valorPago.compareTo(precoTotal) < 0) {
-            String item = quantidade == 1 ? "coxinha" : "coxinhas";
             throw new RegraNegocioException("As cedulas inseridas (R$ " + totalPago
-                    + ") nao cobrem o preco das " + quantidade + " " + item + " de " + coxinha.getSabor()
-                    + " (R$ " + precoTotal.toPlainString() + ")");
+                    + ") nao cobrem o preco total (R$ " + precoTotal.toPlainString() + ")");
         }
 
         cedulasPagas.forEach((denominacao, qtd) -> buscarSlot(denominacao).adicionar(qtd));
@@ -96,7 +107,7 @@ public class CaixaOperacoes {
         clienteRepository.save(cliente);
         slotNotaRepository.saveAll(slotNotaRepository.findAll());
 
-        Movimentacao movimentacao = new Movimentacao(cliente, TipoMovimentacao.SAIDA, valorPago, coxinha.getSabor(), precoTotal, quantidade);
+        Movimentacao movimentacao = new Movimentacao(cliente, TipoMovimentacao.SAIDA, valorPago, precoTotal, itensCompra);
         cedulasPagas.forEach(movimentacao::adicionarPagamento);
         notasTroco.forEach(movimentacao::adicionarTroco);
         return movimentacaoRepository.save(movimentacao);
@@ -130,7 +141,11 @@ public class CaixaOperacoes {
         slotNotaRepository.saveAll(slotNotaRepository.findAll());
         movimentacaoRepository.save(original);
 
-        Movimentacao estorno = new Movimentacao(cliente, TipoMovimentacao.ESTORNO, notaPaga, original.getSabor(), preco, original.getQuantidade());
+        List<ItemCompra> itensEstorno = original.getItens().stream()
+                .map(item -> new ItemCompra(null, item.getSabor(), item.getQuantidade(), item.getPrecoUnitario()))
+                .toList();
+
+        Movimentacao estorno = new Movimentacao(cliente, TipoMovimentacao.ESTORNO, notaPaga, preco, itensEstorno);
         estorno.setMovimentacaoOrigemId(original.getId());
         return movimentacaoRepository.save(estorno);
     }

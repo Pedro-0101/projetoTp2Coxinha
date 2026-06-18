@@ -14,5 +14,6 @@ public record MovimentacaoResponse(
         BigDecimal valor,
         List<TrocoItem> pagamento,
         List<TrocoItem> troco,
-        Long movimentacaoOrigemId) {
+        Long movimentacaoOrigemId,
+        List<ItemResponse> itens) {
 }

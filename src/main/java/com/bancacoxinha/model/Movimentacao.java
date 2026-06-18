@@ -16,6 +16,7 @@ import jakarta.persistence.Table;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 @Entity
@@ -59,6 +60,9 @@ public class Movimentacao {
     @Column(nullable = false)
     private int quantidade = 1;
 
+    @OneToMany(mappedBy = "movimentacao", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ItemCompra> itens = new ArrayList<>();
+
     protected Movimentacao() {
     }
 
@@ -73,12 +77,32 @@ public class Movimentacao {
         this.quantidade = quantidade;
     }
 
+    public Movimentacao(Cliente cliente, TipoMovimentacao tipoMovimentacao, BigDecimal valorNota,
+                        BigDecimal valor, List<ItemCompra> itens) {
+        this.dataHora = LocalDateTime.now();
+        this.cliente = cliente;
+        this.tipoMovimentacao = tipoMovimentacao;
+        this.valorNota = valorNota;
+        this.valor = valor;
+        this.quantidade = itens.stream().mapToInt(ItemCompra::getQuantidade).sum();
+        this.itens = new ArrayList<>(itens);
+        this.itens.forEach(item -> item.setMovimentacao(this));
+    }
+
     public void adicionarTroco(int denominacao, int quantidade) {
         this.troco.add(new TrocoDetalhe(denominacao, quantidade, this));
     }
 
     public void adicionarPagamento(int denominacao, int quantidade) {
         this.pagamento.add(new CedulaPaga(denominacao, quantidade, this));
+    }
+
+    public void adicionarItem(String sabor, int quantidade, BigDecimal precoUnitario) {
+        this.itens.add(new ItemCompra(this, sabor, quantidade, precoUnitario));
+    }
+
+    public List<ItemCompra> getItens() {
+        return Collections.unmodifiableList(itens);
     }
 
     public Long getId() {

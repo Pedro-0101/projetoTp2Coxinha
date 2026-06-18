@@ -1,6 +1,6 @@
 package com.bancacoxinha.command;
 
-import com.bancacoxinha.factory.Coxinha;
+import com.bancacoxinha.factory.ItemCoxinha;
 import com.bancacoxinha.model.Cliente;
 import com.bancacoxinha.model.Movimentacao;
 import com.bancacoxinha.model.CedulaPaga;
@@ -15,7 +15,7 @@ public class TrocaCommand implements TransacaoCommand {
     private final CaixaOperacoes caixaOperacoes;
     private final Cliente cliente;
     private final Movimentacao compraOriginal;
-    private final Coxinha novoSabor;
+    private final List<ItemCoxinha> novosItens;
     private final CalculoPrecoStrategy estrategia;
 
     private Movimentacao estornoOriginal;
@@ -23,11 +23,11 @@ public class TrocaCommand implements TransacaoCommand {
     private Movimentacao estornoDesfazer;
 
     public TrocaCommand(CaixaOperacoes caixaOperacoes, Cliente cliente, Movimentacao compraOriginal,
-                        Coxinha novoSabor, CalculoPrecoStrategy estrategia) {
+                        List<ItemCoxinha> novosItens, CalculoPrecoStrategy estrategia) {
         this.caixaOperacoes = caixaOperacoes;
         this.cliente = cliente;
         this.compraOriginal = compraOriginal;
-        this.novoSabor = novoSabor;
+        this.novosItens = novosItens;
         this.estrategia = estrategia;
     }
 
@@ -35,8 +35,7 @@ public class TrocaCommand implements TransacaoCommand {
     public void executar() {
         List<Integer> notasPagas = cedulasDe(compraOriginal);
         this.estornoOriginal = caixaOperacoes.reverter(compraOriginal.getId());
-        this.novaCompra = caixaOperacoes.registrarCompra(cliente, novoSabor, estrategia, notasPagas, false,
-                compraOriginal.getQuantidade());
+        this.novaCompra = caixaOperacoes.registrarCompra(cliente, novosItens, estrategia, notasPagas, false);
     }
 
     @Override

@@ -1,6 +1,6 @@
 package com.bancacoxinha.command;
 
-import com.bancacoxinha.factory.Coxinha;
+import com.bancacoxinha.factory.ItemCoxinha;
 import com.bancacoxinha.model.Cliente;
 import com.bancacoxinha.model.Movimentacao;
 import com.bancacoxinha.service.CaixaOperacoes;
@@ -12,30 +12,27 @@ public class CompraCommand implements TransacaoCommand {
 
     private final CaixaOperacoes caixaOperacoes;
     private final Cliente cliente;
-    private final Coxinha coxinha;
+    private final List<ItemCoxinha> itens;
     private final CalculoPrecoStrategy estrategia;
     private final List<Integer> notasPagas;
     private final boolean exigirTrocoExato;
-    private final int quantidade;
 
     private Movimentacao compra;
     private Movimentacao estorno;
 
-    public CompraCommand(CaixaOperacoes caixaOperacoes, Cliente cliente, Coxinha coxinha,
-                         CalculoPrecoStrategy estrategia, List<Integer> notasPagas, boolean exigirTrocoExato,
-                         int quantidade) {
+    public CompraCommand(CaixaOperacoes caixaOperacoes, Cliente cliente, List<ItemCoxinha> itens,
+                         CalculoPrecoStrategy estrategia, List<Integer> notasPagas, boolean exigirTrocoExato) {
         this.caixaOperacoes = caixaOperacoes;
         this.cliente = cliente;
-        this.coxinha = coxinha;
+        this.itens = itens;
         this.estrategia = estrategia;
         this.notasPagas = notasPagas;
         this.exigirTrocoExato = exigirTrocoExato;
-        this.quantidade = quantidade;
     }
 
     @Override
     public void executar() {
-        this.compra = caixaOperacoes.registrarCompra(cliente, coxinha, estrategia, notasPagas, exigirTrocoExato, quantidade);
+        this.compra = caixaOperacoes.registrarCompra(cliente, itens, estrategia, notasPagas, exigirTrocoExato);
     }
 
     @Override

@@ -5,8 +5,7 @@ import java.util.List;
 
 public record CompraResponse(
         Long movimentacaoId,
-        String sabor,
-        int quantidade,
+        List<ItemResponse> itens,
         BigDecimal preco,
         List<TrocoItem> pagamento,
         List<TrocoItem> troco,
