@@ -56,17 +56,21 @@ public class Movimentacao {
     @OneToMany(mappedBy = "movimentacao", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<CedulaPaga> pagamento = new ArrayList<>();
 
+    @Column(nullable = false)
+    private int quantidade = 1;
+
     protected Movimentacao() {
     }
 
     public Movimentacao(Cliente cliente, TipoMovimentacao tipoMovimentacao, BigDecimal valorNota,
-                        String sabor, BigDecimal valor) {
+                        String sabor, BigDecimal valor, int quantidade) {
         this.dataHora = LocalDateTime.now();
         this.cliente = cliente;
         this.tipoMovimentacao = tipoMovimentacao;
         this.valorNota = valorNota;
         this.sabor = sabor;
         this.valor = valor;
+        this.quantidade = quantidade;
     }
 
     public void adicionarTroco(int denominacao, int quantidade) {
@@ -127,5 +131,9 @@ public class Movimentacao {
 
     public List<CedulaPaga> getPagamento() {
         return pagamento;
+    }
+
+    public int getQuantidade() {
+        return quantidade;
     }
 }

@@ -16,23 +16,26 @@ public class CompraCommand implements TransacaoCommand {
     private final CalculoPrecoStrategy estrategia;
     private final List<Integer> notasPagas;
     private final boolean exigirTrocoExato;
+    private final int quantidade;
 
     private Movimentacao compra;
     private Movimentacao estorno;
 
     public CompraCommand(CaixaOperacoes caixaOperacoes, Cliente cliente, Coxinha coxinha,
-                         CalculoPrecoStrategy estrategia, List<Integer> notasPagas, boolean exigirTrocoExato) {
+                         CalculoPrecoStrategy estrategia, List<Integer> notasPagas, boolean exigirTrocoExato,
+                         int quantidade) {
         this.caixaOperacoes = caixaOperacoes;
         this.cliente = cliente;
         this.coxinha = coxinha;
         this.estrategia = estrategia;
         this.notasPagas = notasPagas;
         this.exigirTrocoExato = exigirTrocoExato;
+        this.quantidade = quantidade;
     }
 
     @Override
     public void executar() {
-        this.compra = caixaOperacoes.registrarCompra(cliente, coxinha, estrategia, notasPagas, exigirTrocoExato);
+        this.compra = caixaOperacoes.registrarCompra(cliente, coxinha, estrategia, notasPagas, exigirTrocoExato, quantidade);
     }
 
     @Override

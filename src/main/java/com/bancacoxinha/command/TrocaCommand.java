@@ -35,7 +35,8 @@ public class TrocaCommand implements TransacaoCommand {
     public void executar() {
         List<Integer> notasPagas = cedulasDe(compraOriginal);
         this.estornoOriginal = caixaOperacoes.reverter(compraOriginal.getId());
-        this.novaCompra = caixaOperacoes.registrarCompra(cliente, novoSabor, estrategia, notasPagas, false);
+        this.novaCompra = caixaOperacoes.registrarCompra(cliente, novoSabor, estrategia, notasPagas, false,
+                compraOriginal.getQuantidade());
     }
 
     @Override

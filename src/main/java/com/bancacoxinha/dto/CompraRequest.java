@@ -12,5 +12,12 @@ public record CompraRequest(
         @NotBlank String sabor,
         @NotEmpty List<@NotNull @Positive Integer> notasPagas,
         boolean promocional,
-        boolean trocoExato) {
+        boolean trocoExato,
+        @Positive Integer quantidade) {
+
+    public CompraRequest {
+        if (quantidade == null || quantidade < 1) {
+            quantidade = 1;
+        }
+    }
 }

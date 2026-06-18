@@ -48,12 +48,12 @@ public class CaixaOperacoes {
         clienteRepository.save(cliente);
         slotNotaRepository.save(slot);
 
-        Movimentacao movimentacao = new Movimentacao(cliente, TipoMovimentacao.ENTRADA, valor, null, valor);
+        Movimentacao movimentacao = new Movimentacao(cliente, TipoMovimentacao.ENTRADA, valor, null, valor, 1);
         return movimentacaoRepository.save(movimentacao);
     }
 
     public Movimentacao registrarCompra(Cliente cliente, Coxinha coxinha, CalculoPrecoStrategy estrategia,
-                                        List<Integer> notasPagas, boolean exigirTrocoExato) {
+                                        List<Integer> notasPagas, boolean exigirTrocoExato, int quantidade) {
         if (notasPagas == null || notasPagas.isEmpty()) {
             throw new RegraNegocioException("Informe ao menos uma cedula para pagamento");
         }
@@ -63,18 +63,21 @@ public class CaixaOperacoes {
             cedulasPagas.merge(cedula, 1, Integer::sum);
         }
 
-        BigDecimal preco = reais(estrategia.calcular(coxinha.getPrecoBase()));
+        BigDecimal precoUnitario = reais(estrategia.calcular(coxinha.getPrecoBase()));
+        BigDecimal precoTotal = precoUnitario.multiply(reais(quantidade));
         int totalPago = notasPagas.stream().mapToInt(Integer::intValue).sum();
         BigDecimal valorPago = reais(totalPago);
 
-        if (valorPago.compareTo(preco) < 0) {
+        if (valorPago.compareTo(precoTotal) < 0) {
+            String item = quantidade == 1 ? "coxinha" : "coxinhas";
             throw new RegraNegocioException("As cedulas inseridas (R$ " + totalPago
-                    + ") nao cobrem o preco da coxinha de " + coxinha.getSabor() + " (R$ " + preco.toPlainString() + ")");
+                    + ") nao cobrem o preco das " + quantidade + " " + item + " de " + coxinha.getSabor()
+                    + " (R$ " + precoTotal.toPlainString() + ")");
         }
 
-        cedulasPagas.forEach((denominacao, quantidade) -> buscarSlot(denominacao).adicionar(quantidade));
+        cedulasPagas.forEach((denominacao, qtd) -> buscarSlot(denominacao).adicionar(qtd));
 
-        int troco = totalPago - preco.intValueExact();
+        int troco = totalPago - precoTotal.intValueExact();
         Map<Integer, Integer> notasTroco = Map.of();
         if (troco > 0) {
             if (exigirTrocoExato) {
@@ -93,7 +96,7 @@ public class CaixaOperacoes {
         clienteRepository.save(cliente);
         slotNotaRepository.saveAll(slotNotaRepository.findAll());
 
-        Movimentacao movimentacao = new Movimentacao(cliente, TipoMovimentacao.SAIDA, valorPago, coxinha.getSabor(), preco);
+        Movimentacao movimentacao = new Movimentacao(cliente, TipoMovimentacao.SAIDA, valorPago, coxinha.getSabor(), precoTotal, quantidade);
         cedulasPagas.forEach(movimentacao::adicionarPagamento);
         notasTroco.forEach(movimentacao::adicionarTroco);
         return movimentacaoRepository.save(movimentacao);
@@ -127,7 +130,7 @@ public class CaixaOperacoes {
         slotNotaRepository.saveAll(slotNotaRepository.findAll());
         movimentacaoRepository.save(original);
 
-        Movimentacao estorno = new Movimentacao(cliente, TipoMovimentacao.ESTORNO, notaPaga, original.getSabor(), preco);
+        Movimentacao estorno = new Movimentacao(cliente, TipoMovimentacao.ESTORNO, notaPaga, original.getSabor(), preco, original.getQuantidade());
         estorno.setMovimentacaoOrigemId(original.getId());
         return movimentacaoRepository.save(estorno);
     }

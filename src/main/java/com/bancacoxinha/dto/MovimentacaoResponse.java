@@ -10,6 +10,7 @@ public record MovimentacaoResponse(
         String tipoMovimentacao,
         BigDecimal valorNota,
         String sabor,
+        int quantidade,
         BigDecimal valor,
         List<TrocoItem> pagamento,
         List<TrocoItem> troco,

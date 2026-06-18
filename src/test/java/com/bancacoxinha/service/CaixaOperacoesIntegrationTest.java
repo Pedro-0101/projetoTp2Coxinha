@@ -50,7 +50,7 @@ class CaixaOperacoesIntegrationTest {
         int slot2Antes = quantidadeSlot(2);
         int slot20Antes = quantidadeSlot(20);
 
-        Movimentacao mov = caixaOperacoes.registrarCompra(cliente, coxinhaFactory.criar("FRANGO"), new PrecoPadrao(), List.of(20), false);
+        Movimentacao mov = caixaOperacoes.registrarCompra(cliente, coxinhaFactory.criar("FRANGO"), new PrecoPadrao(), List.of(20), false, 1);
 
         assertEquals(TipoMovimentacao.SAIDA, mov.getTipoMovimentacao());
         assertEquals(12, mov.getTroco().stream().mapToInt(t -> t.getDenominacao() * t.getQuantidade()).sum());
@@ -67,7 +67,7 @@ class CaixaOperacoesIntegrationTest {
         int slot2Antes = quantidadeSlot(2);
 
         // CARNE custa 9; paga com 5 + 2 + 2 = 9 (exato, sem troco)
-        Movimentacao mov = caixaOperacoes.registrarCompra(cliente, coxinhaFactory.criar("CARNE"), new PrecoPadrao(), List.of(5, 2, 2), false);
+        Movimentacao mov = caixaOperacoes.registrarCompra(cliente, coxinhaFactory.criar("CARNE"), new PrecoPadrao(), List.of(5, 2, 2), false, 1);
 
         assertEquals(0, mov.getValorNota().compareTo(new BigDecimal("9.00")));
         assertTrue(mov.getTroco().isEmpty());
@@ -83,7 +83,7 @@ class CaixaOperacoesIntegrationTest {
         int slot5Antes = quantidadeSlot(5);
         int slot2Antes = quantidadeSlot(2);
 
-        Movimentacao compra = caixaOperacoes.registrarCompra(cliente, coxinhaFactory.criar("CARNE"), new PrecoPadrao(), List.of(5, 2, 2), false);
+        Movimentacao compra = caixaOperacoes.registrarCompra(cliente, coxinhaFactory.criar("CARNE"), new PrecoPadrao(), List.of(5, 2, 2), false, 1);
         caixaOperacoes.reverter(compra.getId());
 
         assertEquals(slot5Antes, quantidadeSlot(5));
@@ -94,7 +94,7 @@ class CaixaOperacoesIntegrationTest {
     void compraComCedulaMenorQueOPrecoFalha() {
         Cliente cliente = cliente();
         assertThrows(RegraNegocioException.class,
-                () -> caixaOperacoes.registrarCompra(cliente, coxinhaFactory.criar("CATUPIRY"), new PrecoPadrao(), List.of(5), false));
+                () -> caixaOperacoes.registrarCompra(cliente, coxinhaFactory.criar("CATUPIRY"), new PrecoPadrao(), List.of(5), false, 1));
     }
 
     @Test
@@ -104,7 +104,7 @@ class CaixaOperacoesIntegrationTest {
         slotDois.remover(slotDois.getQuantidade());
         slotNotaRepository.save(slotDois);
 
-        Movimentacao mov = caixaOperacoes.registrarCompra(cliente, coxinhaFactory.criar("FRANGO"), new PrecoPadrao(), List.of(10), false);
+        Movimentacao mov = caixaOperacoes.registrarCompra(cliente, coxinhaFactory.criar("FRANGO"), new PrecoPadrao(), List.of(10), false, 1);
 
         assertTrue(mov.getTroco().isEmpty());
         assertEquals(0, cliente.getSaldo().compareTo(new BigDecimal("2.00")));
@@ -118,7 +118,7 @@ class CaixaOperacoesIntegrationTest {
         slotNotaRepository.save(slotDois);
 
         assertThrows(TransacaoImpossivelException.class,
-                () -> caixaOperacoes.registrarCompra(cliente, coxinhaFactory.criar("FRANGO"), new PrecoPadrao(), List.of(10), true));
+                () -> caixaOperacoes.registrarCompra(cliente, coxinhaFactory.criar("FRANGO"), new PrecoPadrao(), List.of(10), true, 1));
     }
 
     @Test
@@ -129,7 +129,7 @@ class CaixaOperacoesIntegrationTest {
         int slot2Antes = quantidadeSlot(2);
         BigDecimal saldoAntes = cliente.getSaldo();
 
-        Movimentacao compra = caixaOperacoes.registrarCompra(cliente, coxinhaFactory.criar("FRANGO"), new PrecoPadrao(), List.of(20), false);
+        Movimentacao compra = caixaOperacoes.registrarCompra(cliente, coxinhaFactory.criar("FRANGO"), new PrecoPadrao(), List.of(20), false, 1);
         Movimentacao estorno = caixaOperacoes.reverter(compra.getId());
 
         assertEquals(TipoMovimentacao.ESTORNO, estorno.getTipoMovimentacao());
@@ -144,7 +144,7 @@ class CaixaOperacoesIntegrationTest {
     @Test
     void estornoDuplicadoFalha() {
         Cliente cliente = cliente();
-        Movimentacao compra = caixaOperacoes.registrarCompra(cliente, coxinhaFactory.criar("FRANGO"), new PrecoPadrao(), List.of(20), false);
+        Movimentacao compra = caixaOperacoes.registrarCompra(cliente, coxinhaFactory.criar("FRANGO"), new PrecoPadrao(), List.of(20), false, 1);
         caixaOperacoes.reverter(compra.getId());
         assertThrows(RegraNegocioException.class, () -> caixaOperacoes.reverter(compra.getId()));
     }

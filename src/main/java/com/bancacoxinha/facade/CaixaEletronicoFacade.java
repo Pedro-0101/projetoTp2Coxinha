@@ -80,13 +80,14 @@ public class CaixaEletronicoFacade {
         CalculoPrecoStrategy estrategia = resolverEstrategia(request.promocional());
 
         CompraCommand comando = new CompraCommand(caixaOperacoes, cliente, coxinha, estrategia,
-                request.notasPagas(), request.trocoExato());
+                request.notasPagas(), request.trocoExato(), request.quantidade());
         registroTransacoes.executar(comando);
 
         Movimentacao movimentacao = comando.getCompra();
         return new CompraResponse(
                 movimentacao.getId(),
                 movimentacao.getSabor(),
+                movimentacao.getQuantidade(),
                 movimentacao.getValor(),
                 paraPagamentoItens(movimentacao),
                 paraTrocoItens(movimentacao),
@@ -185,6 +186,7 @@ public class CaixaEletronicoFacade {
                 movimentacao.getTipoMovimentacao().name(),
                 movimentacao.getValorNota(),
                 movimentacao.getSabor(),
+                movimentacao.getQuantidade(),
                 movimentacao.getValor(),
                 paraPagamentoItens(movimentacao),
                 paraTrocoItens(movimentacao),
