@@ -34,9 +34,11 @@ campo `login`.
 - **Inserir crédito:** insere uma cédula de valor X → `saldo += X` e o slot dessa cédula +1.
   Só aceita as 7 denominações válidas.
 - **Comprar coxinha:** o cliente paga inserindo **uma ou mais cédulas** (`notasPagas`, ex.:
-  `[5, 2, 2]`). A soma **deve cobrir o preço** (senão erro 400). As cédulas entram no caixa; o troco
-  (`total pago - preco`) é devolvido em cédulas. **O que não puder ser devolvido em cédulas é
-  creditado no `saldo`** do cliente (campo `trocoEmCredito` na resposta).
+  `[5, 2, 2]`). A soma **deve cobrir o preço total** (preço × quantidade, senão erro 400). O campo
+  `quantidade` (opcional, default 1) permite comprar várias coxinhas do mesmo sabor de uma vez.
+  As cédulas entram no caixa; o troco (`total pago - precoTotal`) é devolvido em cédulas.
+  **O que não puder ser devolvido em cédulas é creditado no `saldo`** do cliente
+  (campo `trocoEmCredito` na resposta).
 - **Troco:** composto pelas **maiores cédulas disponíveis primeiro** (backtracking; acha a
   combinação se existir, ex.: R$ 100 só com cédulas de R$ 5). Troco **ímpar exige uma cédula de
   R$ 5**. Sem cédulas para o valor exato, devolve o máximo possível e credita o restante no saldo.
@@ -121,10 +123,12 @@ Erros: `404` cliente inexistente; `400` denominação inválida.
 ### 6. Comprar coxinha (SAIDA)
 `POST /api/caixa/compra`
 
-Request: `notasPagas` é uma lista de cédulas (a soma deve ser >= preço). `trocoExato` é opcional
+Request: `notasPagas` é uma lista de cédulas (a soma deve ser >= preço total). `trocoExato` é opcional
 (default `false`): quando `true`, a compra só é concluída se houver cédulas para o troco **exato**,
 senão retorna o erro "Transação impossível" (sem crédito); quando `false`, devolve o máximo em
-cédulas e credita o resto no saldo.
+cédulas e credita o resto no saldo. `quantidade` é opcional (default 1) — permite comprar várias
+coxinhas do mesmo sabor de uma só vez; o `preco` na resposta refletirá o valor total
+(preço base × quantidade).
 ```json
 { "clienteId": 1, "sabor": "FRANGO", "notasPagas": [20], "promocional": false, "trocoExato": false }
 ```
@@ -132,12 +136,17 @@ Exemplo pagando com várias cédulas (R$ 5 + R$ 2 + R$ 2 = R$ 9):
 ```json
 { "clienteId": 1, "sabor": "CARNE", "notasPagas": [5, 2, 2], "promocional": false }
 ```
+Exemplo comprando 3 coxinhas de uma vez:
+```json
+{ "clienteId": 1, "sabor": "FRANGO", "notasPagas": [20, 5], "promocional": false, "quantidade": 3 }
+```
 Response `200` (`pagamento` = cédulas inseridas agregadas; `trocoEmCredito` = parte do troco que não
 pôde ser devolvida em cédulas e foi creditada no saldo; normalmente 0):
 ```json
 {
   "movimentacaoId": 2,
   "sabor": "FRANGO",
+  "quantidade": 1,
   "preco": 8.00,
   "pagamento": [ { "denominacao": 20, "quantidade": 1 } ],
   "troco": [ { "denominacao": 10, "quantidade": 1 }, { "denominacao": 2, "quantidade": 1 } ],
@@ -155,7 +164,8 @@ Erros:
 ### 7. Trocar sabor (ESTORNO + nova SAIDA)
 `POST /api/caixa/troca`
 
-Request (`movimentacaoId` = id de uma compra SAIDA anterior):
+Request (`movimentacaoId` = id de uma compra SAIDA anterior). A troca preserva a `quantidade`
+da compra original:
 ```json
 { "clienteId": 1, "movimentacaoId": 2, "novoSabor": "QUEIJO", "promocional": false }
 ```
@@ -166,6 +176,7 @@ Response `200`:
   "novaMovimentacaoId": 6,
   "saborAnterior": "FRANGO",
   "novoSabor": "QUEIJO",
+  "quantidade": 1,
   "preco": 6.00,
   "troco": [ { "denominacao": 10, "quantidade": 1 }, { "denominacao": 2, "quantidade": 2 } ],
   "trocoEmCredito": 0.00,
@@ -190,6 +201,7 @@ Response `200` (a movimentação de ESTORNO gerada):
   "tipoMovimentacao": "ESTORNO",
   "valorNota": 20.00,
   "sabor": "FRANGO",
+  "quantidade": 1,
   "valor": 8.00,
   "troco": [],
   "movimentacaoOrigemId": 2
@@ -251,6 +263,7 @@ Response `200` (ordenado do mais recente para o mais antigo):
     "tipoMovimentacao": "ESTORNO",
     "valorNota": 20.00,
     "sabor": "FRANGO",
+    "quantidade": 1,
     "valor": 8.00,
     "pagamento": [],
     "troco": [],
@@ -262,6 +275,7 @@ Response `200` (ordenado do mais recente para o mais antigo):
     "tipoMovimentacao": "SAIDA",
     "valorNota": 20.00,
     "sabor": "FRANGO",
+    "quantidade": 1,
     "valor": 8.00,
     "pagamento": [ { "denominacao": 20, "quantidade": 1 } ],
     "troco": [ { "denominacao": 10, "quantidade": 1 }, { "denominacao": 2, "quantidade": 1 } ],
