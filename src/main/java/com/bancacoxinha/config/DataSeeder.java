@@ -22,6 +22,7 @@ public class DataSeeder implements CommandLineRunner {
     }
 
     @Override
+    @SuppressWarnings("null")
     public void run(String... args) {
         clienteRepository.save(new Cliente("Cliente Demo", "cliente", valor(0)));
         clienteRepository.save(new Cliente("Cliente VIP", "vip", valor(50)));

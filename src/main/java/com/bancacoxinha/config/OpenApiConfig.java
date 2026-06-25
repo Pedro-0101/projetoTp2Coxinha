@@ -12,7 +12,7 @@ public class OpenApiConfig {
     public OpenAPI bancaCoxinhaOpenApi() {
         return new OpenAPI().info(new Info()
                 .title("Banca de Coxinha - Caixa Eletronico de Salgados")
-                .description("Back-end de demonstracao de Design Patterns: Repository, Strategy, Factory Method, Command e Facade")
+                .description("Back-end de demonstracao de Design Patterns: Repository, Strategy, Factory Method, Command, Observer e Facade")
                 .version("1.0.0"));
     }
 }

@@ -54,6 +54,7 @@ public class CaixaOperacoes {
         return movimentacaoRepository.save(movimentacao);
     }
 
+    @SuppressWarnings("null")
     public Movimentacao registrarCompra(Cliente cliente, List<ItemCoxinha> itens, CalculoPrecoStrategy estrategia,
                                         List<Integer> notasPagas, boolean exigirTrocoExato) {
         if (notasPagas == null || notasPagas.isEmpty()) {
@@ -113,6 +114,7 @@ public class CaixaOperacoes {
         return movimentacaoRepository.save(movimentacao);
     }
 
+    @SuppressWarnings("null")
     public Movimentacao reverter(Long movimentacaoId) {
         Movimentacao original = movimentacaoRepository.findById(movimentacaoId)
                 .orElseThrow(() -> new RegraNegocioException("Movimentacao nao encontrada: " + movimentacaoId));

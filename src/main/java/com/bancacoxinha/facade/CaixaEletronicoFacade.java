@@ -9,7 +9,6 @@ import com.bancacoxinha.dto.CompraRequest;
 import com.bancacoxinha.dto.CompraResponse;
 import com.bancacoxinha.dto.CreditoRequest;
 import com.bancacoxinha.dto.CreditoResponse;
-import com.bancacoxinha.dto.ItemCompraRequest;
 import com.bancacoxinha.dto.ItemResponse;
 import com.bancacoxinha.dto.LoginRequest;
 import com.bancacoxinha.dto.MovimentacaoResponse;
@@ -19,11 +18,9 @@ import com.bancacoxinha.dto.TrocaRequest;
 import com.bancacoxinha.dto.TrocaResponse;
 import com.bancacoxinha.dto.TrocoItem;
 import com.bancacoxinha.exception.RecursoNaoEncontradoException;
-import com.bancacoxinha.factory.Coxinha;
 import com.bancacoxinha.factory.CoxinhaFactory;
 import com.bancacoxinha.factory.ItemCoxinha;
 import com.bancacoxinha.model.Cliente;
-import com.bancacoxinha.model.ItemCompra;
 import com.bancacoxinha.model.Movimentacao;
 import com.bancacoxinha.model.SlotNota;
 import com.bancacoxinha.repository.MovimentacaoRepository;
@@ -102,6 +99,7 @@ public class CaixaEletronicoFacade {
     }
 
     @Transactional
+    @SuppressWarnings("null")
     public TrocaResponse trocar(TrocaRequest request) {
         Cliente cliente = buscarCliente(request.clienteId());
         Movimentacao original = movimentacaoRepository.findById(request.movimentacaoId())

@@ -34,6 +34,7 @@ public class ClienteService {
     }
 
     @Transactional(readOnly = true)
+    @SuppressWarnings("null")
     public Cliente buscarPorId(Long id) {
         return clienteRepository.findById(id)
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Cliente nao encontrado: " + id));
